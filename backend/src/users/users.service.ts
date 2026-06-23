@@ -21,4 +21,37 @@ export class UsersService {
       data,
     });
   }
+
+  async findById(id: string){
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        bio: true,
+        department: true,
+        graduationYear: true,
+        avatarUrl: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async updateProfile(
+    userId: string,
+    data: {
+      username?: string;
+      bio?: string;
+      department?: string;
+      graduationYear?: number;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
 }
