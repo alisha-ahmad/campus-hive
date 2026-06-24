@@ -19,6 +19,7 @@ export class PostsService {
     return this.prisma.post.findMany({
       include: {
         author: true,
+        likes: true,
       },
       orderBy: {
         createdAt: 'desc',
