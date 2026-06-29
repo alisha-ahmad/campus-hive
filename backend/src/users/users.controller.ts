@@ -9,12 +9,12 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard) @Get('me')
   getMe(@Req() req: any) {
-    return this.usersService.findById(req.user.sub);
+    return this.usersService.findById(req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard) @Patch('me')
   updateMe(@Req() req: any, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(req.user.sub, dto);
+    return this.usersService.updateProfile(req.user.userId, dto);
   }
 
   @Get('search')
