@@ -1,7 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { HidePostDto } from './dto/hide-post.dto';
-import { HideCommentDto } from './dto/hide-comment.dto';
+import { HideContentDto } from './dto/hide-content.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { formatPost, formatComment } from '../common/formatters/post-response.util';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -213,7 +212,7 @@ export class ModerationService {
     });
   }
 
-  async hidePost(postId: string, dto: HidePostDto) {
+  async hidePost(postId: string, dto: HideContentDto) {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -257,7 +256,7 @@ export class ModerationService {
     });
   }
 
-  async hideComment(commentId: string, dto: HideCommentDto) {
+  async hideComment(commentId: string, dto: HideContentDto) {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
     });

@@ -1,0 +1,1 @@
+export { OpportunityType } from '@prisma/client';

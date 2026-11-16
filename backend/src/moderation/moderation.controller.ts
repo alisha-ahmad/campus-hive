@@ -1,8 +1,7 @@
 import { Controller, Body, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ModerationService } from './moderation.service';
-import { HidePostDto } from './dto/hide-post.dto';
-import { HideCommentDto } from './dto/hide-comment.dto';
+import { HideContentDto } from './dto/hide-content.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -35,7 +34,7 @@ export class ModerationController {
   }
 
   @Patch('posts/:id/hide')
-  hidePost(@Param('id') postId: string, @Body() dto: HidePostDto) {
+  hidePost(@Param('id') postId: string, @Body() dto: HideContentDto) {
     return this.moderationService.hidePost(postId, dto);
   }
 
@@ -45,7 +44,7 @@ export class ModerationController {
   }
 
   @Patch('comments/:id/hide')
-  hideComment(@Param('id') commentId: string, @Body() dto: HideCommentDto) {
+  hideComment(@Param('id') commentId: string, @Body() dto: HideContentDto) {
     return this.moderationService.hideComment(commentId, dto);
   }
 

@@ -15,6 +15,7 @@ import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ReportsModule } from './reports/reports.module';
 import { ModerationModule } from './moderation/moderation.module';
+import { OpportunitiesModule } from './opportunities/opportunities.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ModerationModule } from './moderation/moderation.module';
     UploadsModule,
     ReportsModule,
     ModerationModule,
+    OpportunitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

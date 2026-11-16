@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { resolveMentions } from '../common/utils/mentions.util';
 import { isModerator } from '../common/utils/role.util';
 import { ensureUserNotSuspended } from '../common/utils/user-status.util';
+import { OpportunityType } from '@prisma/client';
 
 @Injectable()
 export class PostsService {
@@ -16,6 +17,7 @@ export class PostsService {
   private postSelect(currentUserId?: string) {
     return {
       id: true,
+      title: true,
       content: true,
       imageUrl: true,
       videoUrl: true,
@@ -70,6 +72,14 @@ export class PostsService {
           },
         },
       },
+
+      //opportunities
+      isOpportunity: true,
+      opportunityType: true,
+      organization: true,
+      location: true,
+      applicationUrl: true,
+      deadline: true,
     };
   }
 
@@ -129,11 +139,29 @@ export class PostsService {
     if (!generalCategory) {
       throw new NotFoundException('Default category "General" not found');
     }
+    if (dto.isOpportunity) {
+      if (!dto.title?.trim()) throw new BadRequestException('Title required for opportunity post');
+      if (!dto.opportunityType) throw new BadRequestException('Opportunity type required for opportunity post');
+      const validTypes = Object.values(OpportunityType);
+      if (!validTypes.includes(dto.opportunityType as OpportunityType)) {
+        throw new BadRequestException(`Invalid opportunity type. Allowed values: ${validTypes.join(', ')}`);
+      }
+      if (!dto.organization?.trim()) throw new BadRequestException('Organization required for opportunity post');
+      if (dto.deadline) {
+        const deadline = new Date(dto.deadline);
+        if (isNaN(deadline.getTime())) throw new BadRequestException('Invalid opportunity deadline');
+        if (deadline < new Date()) throw new BadRequestException('Opportunity deadline cannot be in the past');
+      }
+    }
+    if (dto.isOpportunity && dto.isAnonymous) {
+      throw new BadRequestException('Opportunity posts cannot be anonymous');
+    }
     const resolvedMentions = await resolveMentions(this.prisma, dto.content);
     const attachmentExt = attachment ? attachment.mimetype : null;
     const post = await this.prisma.$transaction(async (tx) => {
       const createdPost = await tx.post.create({
         data: {
+          title: dto.isOpportunity ? dto.title?.trim() : null,
           content: dto.content,
           authorId,
           categoryId: dto.categoryId ?? generalCategory.id,
@@ -143,6 +171,13 @@ export class PostsService {
           attachmentUrl: attachment ? `/uploads/posts/files/${attachment.filename}` : null,
           attachmentName: attachment ? attachment.originalname : null,
           attachmentMimeType: attachmentExt,
+
+          isOpportunity: !!dto.isOpportunity,
+          opportunityType: dto.isOpportunity ? dto.opportunityType : null,
+          organization: dto.isOpportunity ? dto.organization?.trim() : null,
+          location: dto.isOpportunity ? dto.location?.trim() : null,
+          applicationUrl: dto.isOpportunity ? dto.applicationUrl?.trim() : null,
+          deadline: dto.isOpportunity && dto.deadline ? new Date(dto.deadline) : null,
         },
       });
       if (resolvedMentions.length) {
@@ -241,15 +276,44 @@ export class PostsService {
     if (post.isHidden) {
       throw new ForbiddenException('Hidden posts cannot be edited');
     }
+    const nextIsOpportunity = dto.isOpportunity !== undefined ? dto.isOpportunity : post.isOpportunity;
+    const nextTitle = dto.title !== undefined ? dto.title.trim() : post.title;
+    const nextOpportunityType = dto.opportunityType !== undefined ? dto.opportunityType : post.opportunityType;
+    const nextOrganization = dto.organization !== undefined ? dto.organization.trim() : post.organization;
+    const nextLocation = dto.location !== undefined ? dto.location.trim() : post.location;
+    const nextApplicationUrl = dto.applicationUrl !== undefined ? dto.applicationUrl.trim() : post.applicationUrl;
+    const nextDeadline = dto.deadline !== undefined ? new Date(dto.deadline) : post.deadline;
+    if (nextIsOpportunity) {
+      if (!nextTitle) throw new BadRequestException('Opportunity title is required');
+      if (!nextOpportunityType) throw new BadRequestException('Opportunity type is required');
+      const validTypes = Object.values(OpportunityType); 
+      if (!validTypes.includes(nextOpportunityType as OpportunityType)) { 
+        throw new BadRequestException(`Invalid opportunity type. Allowed values: ${validTypes.join(', ')}`); 
+      }
+      if (!nextOrganization) throw new BadRequestException('Organization is required');
+      if (nextDeadline) { 
+        if (isNaN(nextDeadline.getTime())) throw new BadRequestException('Invalid opportunity deadline');
+        if (nextDeadline.getTime() < Date.now()) throw new BadRequestException('Opportunity deadline cannot be in the past'); 
+      }
+    }
+    const nextIsAnonymous = dto.isAnonymous !== undefined ? dto.isAnonymous : post.isAnonymous;
+    if (nextIsOpportunity && nextIsAnonymous) throw new BadRequestException('Opportunity posts cannot be anonymous');
     const nextContent = dto.content !== undefined ? dto.content : post.content;
     const resolvedMentions = await resolveMentions(this.prisma, nextContent);
     const updatedPost = await this.prisma.$transaction(async (tx) => {
       await tx.post.update({
         where: { id: postId },
         data: {
+          title: nextIsOpportunity ? nextTitle : null,
           content: dto.content,
           categoryId: dto.categoryId,
-          isAnonymous: dto.isAnonymous !== undefined ? dto.isAnonymous : post.isAnonymous,
+          isAnonymous: nextIsAnonymous,
+          isOpportunity: nextIsOpportunity,
+          opportunityType: nextIsOpportunity ? nextOpportunityType : null,
+          organization: nextIsOpportunity ? nextOrganization : null,
+          location: nextIsOpportunity ? nextLocation : null,
+          applicationUrl: nextIsOpportunity ? nextApplicationUrl : null,
+          deadline: nextIsOpportunity ? nextDeadline : null,
         },
       });
       await tx.postMention.deleteMany({
@@ -298,4 +362,5 @@ export class PostsService {
       message: 'Post deleted successfully',
     };
   }
+  
 }

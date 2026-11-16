@@ -51,9 +51,9 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @Patch(':id/role')
-  setRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
-    return this.usersService.setRole(id, dto.role);
+  setRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto, @Req() req: any) {
+    return this.usersService.setRole(req.user.userId, id, dto.role);
   }
 }

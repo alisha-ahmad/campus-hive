@@ -1,7 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCommentDto } from './dto/create-comment.dto';
-import { UpdateCommentDto } from './dto/update-comment.dto';
+import { CommentContentDto } from './dto/comment-content.dto';
 import { formatComment } from '../common/formatters/post-response.util';
 import { resolveMentions } from '../common/utils/mentions.util';
 import { isModerator } from '../common/utils/role.util';
@@ -11,7 +10,7 @@ import { ensureUserNotSuspended } from '../common/utils/user-status.util';
 export class CommentsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(authorId: string, postId: string, dto: CreateCommentDto) {
+  async create(authorId: string, postId: string, dto: CommentContentDto) {
     await ensureUserNotSuspended(this.prisma, authorId);
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
@@ -129,7 +128,7 @@ export class CommentsService {
     });
   }
 
-  async update(id: string, authorId: string, dto: UpdateCommentDto) {
+  async update(id: string, authorId: string, dto: CommentContentDto) {
     await ensureUserNotSuspended(this.prisma, authorId);
     const comment = await this.prisma.comment.findUnique({
       where: { id },

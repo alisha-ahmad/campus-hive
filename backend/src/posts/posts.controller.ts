@@ -6,9 +6,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { postFilesUploadOptions } from '../common/upload/multer-options';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { UserRole } from '../common/enums/user-role.enum';
+import { OpportunityType } from '@prisma/client';
 
 @Controller('posts')
 export class PostsController {
@@ -74,4 +72,5 @@ export class PostsController {
   deletePost(@Param('id') id: string, @Req() req: any) {
     return this.postsService.deletePost(id, req.user.userId);
   }
+
 }

@@ -62,6 +62,7 @@ export function formatComment(
 export function formatPost(post: any, viewer?: CurrentUser) {
   return {
     id: post.id,
+    title: post.title ?? null,
     content: post.isHidden ? null : post.content,
     imageUrl: post.isHidden ? null : post.imageUrl,
     videoUrl: post.isHidden ? null : post.videoUrl,
@@ -73,6 +74,17 @@ export function formatPost(post: any, viewer?: CurrentUser) {
             type: post.attachmentMimeType,
           }
         : null,
+    
+    //opportunities
+    opportunity: post.isOpportunity
+      ? {
+          type: post.opportunityType,
+          organization: post.organization,
+          location: post.location,
+          applicationUrl: post.applicationUrl,
+          deadline: post.deadline,
+      } : null,
+    
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     isAnonymous: !!post.isAnonymous,
@@ -84,7 +96,7 @@ export function formatPost(post: any, viewer?: CurrentUser) {
           name: post.category.name
         }
       : null,
-    author: formatAuthor(post.author, { anonymous: !!post.isAnonymous, canRevealAnonymousAuthor: isModerator(viewer) ?? false,
+    author: formatAuthor(post.author, { anonymous: !!post.isAnonymous, canRevealAnonymousAuthor: isModerator(viewer),
     }),
     counts: post.isHidden
       ? {

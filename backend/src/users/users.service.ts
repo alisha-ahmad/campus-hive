@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatPost } from '../common/formatters/post-response.util';
 import { join } from 'path';
 import * as fs from 'fs';
-import { isModerator } from '../common/utils/role.util';
+import { isModerator, isAdmin, isSuperAdmin } from '../common/utils/role.util';
 import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
@@ -212,16 +212,38 @@ export class UsersService {
     return posts.map((post) => formatPost(post, currentUser));
   }
 
-  async setRole(userId: string, role: UserRole) {
-    const user = await this.prisma.user.findUnique({
+  async setRole(actorId: string, userId: string, desired_role: UserRole) {
+    const actor = await this.prisma.user.findUnique({
+      where: { id: actorId },
+      select: { role: true },
+    });     //actorId=who is changing role, userId=whose role is changed
+    if (!actor) {
+      throw new NotFoundException('Actor not found');
+    }
+    const target_user = await this.prisma.user.findUnique({
       where: { id: userId },
+      select: { role: true },
     });
-    if (!user) {
+    if (!target_user) {
       throw new NotFoundException('User not found');
+    }
+    if (actorId === userId) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+    if (desired_role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('A Super Admin role cannot be assigned through this endpoint');
+    }
+    const actorIsSuperAdmin = isSuperAdmin({ userId: actorId, role: actor.role });
+    if (!actorIsSuperAdmin) {
+      const isTargetAdmin = target_user.role === UserRole.ADMIN || target_user.role === UserRole.SUPER_ADMIN;
+      const assigningAdmin = desired_role === UserRole.ADMIN;
+      if (isTargetAdmin || assigningAdmin) {
+        throw new ForbiddenException('Only Super Admin can manage Admin and Super Admin roles');
+      }
     }
     return this.prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: { role: desired_role },
       select: {
         id: true,
         firstName: true,
